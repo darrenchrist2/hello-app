@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/salvestacia/hello-app.git'
+                git branch: 'main', git 'https://github.com/salvestacia/hello-app.git'
             }
         }
 

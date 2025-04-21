@@ -7,6 +7,14 @@ pipeline {
     }
 
     stages {
+		stage('Set Docker Context') {
+            steps {
+                script {
+                    sh 'docker context use desktop-linux'
+                }
+            }
+        }
+		
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/salvestacia/hello-app.git', branch: 'main'

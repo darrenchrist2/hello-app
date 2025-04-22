@@ -22,14 +22,20 @@ pipeline {
         }
 
         stage('Push Image') {
-            steps {
-                script {
-                    docker.withRegistry('', 'dockerhub-cred-id') {
-                        docker.image("${IMAGE_NAME}:${TAG}").push()
-                    }
-                }
-            }
-        }
+			steps {
+				script {
+					withCredentials([usernamePassword(
+						credentialsId: 'dockerhub-cred-id',
+						usernameVariable: 'DOCKER_USER',
+						passwordVariable: 'DOCKER_PASS'
+					)]) {
+						bat "echo Logging in to DockerHub..."
+						bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+						bat "docker push ${IMAGE_NAME}:${TAG}"
+					}
+				}
+			}
+		}
 
         stage('Deploy to Kubernetes') {
             steps {

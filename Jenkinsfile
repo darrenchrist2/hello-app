@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "darren13/hello-app"
-        TAG = "latest"
+        TAG = "v${env.BUILD_NUMBER}"  // Menggunakan BUILD_NUMBER untuk tag unik per build
     }
 
     stages {
@@ -22,26 +22,31 @@ pipeline {
         }
 
         stage('Push Image') {
-			steps {
-				script {
-					withCredentials([usernamePassword(
-						credentialsId: 'dockerhub-cred-id',
-						usernameVariable: 'DOCKER_USER',
-						passwordVariable: 'DOCKER_PASS'
-					)]) {
-						bat "echo Logging in to DockerHub..."
-						bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-						bat "docker push ${IMAGE_NAME}:${TAG}"
-					}
-				}
-			}
-		}
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-cred-id',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        bat "echo Logging in to DockerHub..."
+                        bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+                        bat "docker push ${IMAGE_NAME}:${TAG}"  // Push dengan tag unik
+                    }
+                }
+            }
+        }
 
         stage('Deploy to Kubernetes') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig-credential-id']) {
-                    bat 'kubectl apply -f k8s/deployment.yaml'
-                    bat 'kubectl apply -f k8s/service.yaml'
+                script {
+                    // Update deployment.yaml dengan tag unik
+                    bat "sed -i \"s|darren13/hello-app:.*|darren13/hello-app:${TAG}|\" k8s/deployment.yaml"
+                    // Deploy ke Kubernetes
+                    withKubeConfig([credentialsId: 'kubeconfig-credential-id']) {
+                        bat 'kubectl apply -f k8s/deployment.yaml'
+                        bat 'kubectl apply -f k8s/service.yaml'
+                    }
                 }
             }
         }

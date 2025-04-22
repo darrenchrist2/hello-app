@@ -40,8 +40,11 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Update deployment.yaml dengan tag unik
-                    bat "sed -i \"s|darren13/hello-app:.*|darren13/hello-app:${TAG}|\" k8s/deployment.yaml"
+                    // Update tag image secara dinamis di deployment.yaml (Windows-safe)
+                    def deploymentFile = 'k8s/deployment.yaml'
+                    def content = readFile(deploymentFile)
+                    content = content.replaceAll(/image: darren13\/hello-app:.*/, "image: darren13/hello-app:${TAG}")
+                    writeFile(file: deploymentFile, text: content)
                     // Deploy ke Kubernetes
                     withKubeConfig([credentialsId: 'kubeconfig-credential-id']) {
                         bat 'kubectl apply -f k8s/deployment.yaml'

@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "darren13/hello-app"
         TAG = "v${env.BUILD_NUMBER}"  // Tag unik per build
-        CONTAINER_NAME = "hello-app-test-container"
+        CONTAINER_NAME = "hello-app-for-test-container"
     }
 
     stages {

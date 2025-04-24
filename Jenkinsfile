@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         IMAGE_NAME = "darren13/hello-app"
-        TAG = "v${env.BUILD_NUMBER}"  // Menggunakan BUILD_NUMBER untuk tag unik per build
+        TAG = "v${env.BUILD_NUMBER}"  // Tag unik per build
+        CONTAINER_NAME = "hello-app-test"
     }
 
     stages {
@@ -21,6 +22,32 @@ pipeline {
             }
         }
 
+        stage('Test App') {
+            steps {
+                script {
+                    try {
+                        // Jalankan container untuk testing
+                        bat "docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${IMAGE_NAME}:${TAG}"
+                        
+                        // Tunggu sebentar agar container siap
+                        sleep(time: 5, unit: 'SECONDS')
+
+                        // Lakukan request ke localhost dan periksa responsnya
+                        def response = bat(script: 'curl -s http://localhost:3000', returnStdout: true).trim()
+                        
+                        echo "Response from app: ${response}"
+                        
+                        if (!response.contains("Hello World")) {
+                            error("Response tidak sesuai! Testing gagal.")
+                        }
+                    } finally {
+                        // Hapus container setelah test selesai
+                        bat "docker rm -f ${CONTAINER_NAME}"
+                    }
+                }
+            }
+        }
+
         stage('Push Image') {
             steps {
                 script {
@@ -31,7 +58,7 @@ pipeline {
                     )]) {
                         bat "echo Logging in to DockerHub..."
                         bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-                        bat "docker push ${IMAGE_NAME}:${TAG}"  // Push dengan tag unik
+                        bat "docker push ${IMAGE_NAME}:${TAG}"
                     }
                 }
             }
@@ -40,12 +67,11 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Update tag image secara dinamis di deployment.yaml (Windows-safe)
                     def deploymentFile = 'k8s/deployment.yaml'
                     def content = readFile(deploymentFile)
                     content = content.replaceAll(/image: darren13\/hello-app:.*/, "image: darren13/hello-app:${TAG}")
                     writeFile(file: deploymentFile, text: content)
-                    // Deploy ke Kubernetes
+
                     withKubeConfig([credentialsId: 'kubeconfig-credential-id']) {
                         bat 'kubectl apply -f k8s/deployment.yaml'
                         bat 'kubectl apply -f k8s/service.yaml'

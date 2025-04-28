@@ -112,23 +112,21 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Menjalankan container
                         sh "docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${IMAGE_NAME}:${TAG}"
                         
-                        // Tunggu container siap
-                        sleep(time: 10, unit: 'SECONDS') // Menunggu lebih lama untuk container siap
+                        sleep(time: 30, unit: 'SECONDS') // lebih lama
 
-                        // Memeriksa apakah aplikasi merespons
+                        sh "docker ps -a"
+                        sh "docker logs ${CONTAINER_NAME}"
+
                         def response = sh(script: 'curl -s http://localhost:3000', returnStdout: true).trim()
 
                         echo "Response from app: ${response}"
-                        
-                        // Jika respons tidak sesuai, pipeline akan gagal
+
                         if (!response.contains("Hello World")) {
                             error("Response tidak sesuai! Testing gagal.")
                         }
                     } finally {
-                        // Menghapus container setelah pengujian selesai
                         sh "docker rm -f ${CONTAINER_NAME}"
                     }
                 }

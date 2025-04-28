@@ -1,4 +1,3 @@
-windows
 pipeline {
     agent any
 

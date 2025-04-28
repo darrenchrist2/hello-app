@@ -91,6 +91,7 @@ pipeline {
         IMAGE_NAME = "darren13/hello-app"
         TAG = "v${env.BUILD_NUMBER}"
         CONTAINER_NAME = "hello-app-for-test-container"
+        DOCKER_NETWORK = 'jenkins'
     }
 
     stages {
@@ -112,14 +113,12 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${IMAGE_NAME}:${TAG}"
+                        sh "docker run -d --name ${CONTAINER_NAME} --network ${DOCKER_NETWORK} ${IMAGE_NAME}:${TAG}"
                         
-                        sleep(time: 30, unit: 'SECONDS') // lebih lama
+                        sleep(time: 10, unit: 'SECONDS')
 
-                        sh "docker ps -a"
-                        sh "docker logs ${CONTAINER_NAME}"
-
-                        def response = sh(script: 'curl -s http://localhost:3000', returnStdout: true).trim()
+                        // Akses container langsung berdasarkan name, bukan localhost
+                        def response = sh(script: "docker exec ${CONTAINER_NAME} curl -s http://localhost:3000", returnStdout: true).trim()
 
                         echo "Response from app: ${response}"
 
@@ -132,7 +131,6 @@ pipeline {
                 }
             }
         }
-
         stage('Push Image') {
             steps {
                 script {

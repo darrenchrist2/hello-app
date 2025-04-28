@@ -91,7 +91,6 @@ pipeline {
         IMAGE_NAME = "darren13/hello-app"
         TAG = "v${env.BUILD_NUMBER}"
         CONTAINER_NAME = "hello-app-for-test-container"
-        DOCKER_NETWORK = 'jenkins'
     }
 
     stages {
@@ -113,7 +112,8 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "docker run -d --name ${CONTAINER_NAME} --network ${DOCKER_NETWORK} ${IMAGE_NAME}:${TAG}"
+                        sh "docker network create test-network || true" // buat network kalau belum ada
+                        sh "docker run -d --name ${CONTAINER_NAME} --network test-network ${IMAGE_NAME}:${TAG}"
                         
                         sleep(time: 10, unit: 'SECONDS')
 
